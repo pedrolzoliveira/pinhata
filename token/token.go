@@ -20,6 +20,7 @@ const (
 	CLOSE_PARENTHESES TokenType = ")"
 	OPEN_BRACES       TokenType = "{"
 	CLOSE_BRACES      TokenType = "}"
+	EQUAL_SIGN        TokenType = "="
 	RETURN            TokenType = "return"
 )
 
@@ -30,7 +31,7 @@ type Token struct {
 
 func generateToken(identifier string) (Token, error) {
 	switch TokenType(identifier) {
-	case FUNCTION, OPEN_BRACES, CLOSE_BRACES, OPEN_PARENTHESES, CLOSE_PARENTHESES, RETURN:
+	case FUNCTION, OPEN_BRACES, CLOSE_BRACES, OPEN_PARENTHESES, CLOSE_PARENTHESES, RETURN, EQUAL_SIGN:
 		return Token{Type: TokenType(identifier)}, nil
 	default:
 		if value, error := strconv.Atoi(identifier); error == nil {
