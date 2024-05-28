@@ -22,8 +22,8 @@ const (
 )
 
 var tokenToRegex = map[TokenType]regexp.Regexp{
-	FUNCTION:          *regexp.MustCompile("function"),
-	RETURN:            *regexp.MustCompile("return"),
+	FUNCTION:          *regexp.MustCompile("\\bfunction\\b"),
+	RETURN:            *regexp.MustCompile("\\breturn\\b"),
 	IDENTIFIER:        *regexp.MustCompile("\\w+"),
 	OPEN_PARENTHESIS:  *regexp.MustCompile("\\("),
 	CLOSE_PARENTHESIS: *regexp.MustCompile("\\)"),
