@@ -31,13 +31,13 @@ func (arr *Array[T]) Has(function func(T) bool) bool {
 	return false
 }
 
-func (arr *Array[T]) Find(function func(T) bool) (bool, T) {
+func (arr *Array[T]) Find(function func(T) bool) (T, bool) {
 	for _, item := range *arr {
 		if function(item) {
-			return true, item
+			return item, true
 		}
 	}
 
 	var zeroValue T
-	return false, zeroValue
+	return zeroValue, false
 }
