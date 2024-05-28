@@ -68,14 +68,19 @@ func findNextToken(content string) (*Token, int) {
 
 		if indexes[1] < tokenEndIndex || isFirstIteration {
 			tokenContent := content[indexes[0]:indexes[1]]
-			if tokenType == IDENTIFIER && isKeyword(tokenContent) {
-				_, token := keywords.Find(func(tt TokenType) bool {
-					rgx := tokenToRegex[tt]
-					return rgx.MatchString(tokenContent)
-				})
-				result = &Token{Type: token, Content: tokenContent}
-			} else {
-				result = &Token{Type: tokenType, Content: tokenContent}
+			switch tokenType {
+			case IDENTIFIER:
+				if isKeyword(tokenContent) {
+					token, _ := keywords.Find(func(tt TokenType) bool {
+						rgx := tokenToRegex[tt]
+						return rgx.MatchString(tokenContent)
+					})
+					result = &Token{Type: token}
+				} else {
+					result = &Token{Type: tokenType, Content: tokenContent}
+				}
+			default:
+				result = &Token{Type: tokenType}
 			}
 			tokenEndIndex = indexes[1]
 			isFirstIteration = false
