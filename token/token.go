@@ -1,11 +1,7 @@
 package token
 
 import (
-	"fmt"
 	"regexp"
-	"strconv"
-	"strings"
-	"unicode"
 
 	"github.com/pedrolzoliveira/pinhata/array"
 )
@@ -13,47 +9,96 @@ import (
 type TokenType string
 
 const (
-	INTEGER_LITERAL   TokenType = "integer_literal"
-	VARIABLE_NAME     TokenType = "variable_name"
 	FUNCTION          TokenType = "function"
-	OPEN_PARENTHESES  TokenType = "("
-	CLOSE_PARENTHESES TokenType = ")"
-	OPEN_BRACES       TokenType = "{"
-	CLOSE_BRACES      TokenType = "}"
-	EQUAL_SIGN        TokenType = "="
+	IDENTIFIER        TokenType = "identifier"
+	OPEN_PARENTHESIS  TokenType = "open parenthesis"
+	CLOSE_PARENTHESIS TokenType = "close parenthesis"
+	OPEN_BRACE        TokenType = "open brace"
+	CLOSE_BRACE       TokenType = "close brace"
+	COMMA             TokenType = "comma"
 	RETURN            TokenType = "return"
+	SEMI_COLUMN       TokenType = "semi column"
+	PLUS_SIGN         TokenType = "plus sign"
 )
 
-type Token struct {
-	Type  TokenType
-	Value any
+var tokenToRegex = map[TokenType]regexp.Regexp{
+	FUNCTION:          *regexp.MustCompile("function"),
+	RETURN:            *regexp.MustCompile("return"),
+	IDENTIFIER:        *regexp.MustCompile("\\w+"),
+	OPEN_PARENTHESIS:  *regexp.MustCompile("\\("),
+	CLOSE_PARENTHESIS: *regexp.MustCompile("\\)"),
+	OPEN_BRACE:        *regexp.MustCompile("{"),
+	CLOSE_BRACE:       *regexp.MustCompile("}"),
+	COMMA:             *regexp.MustCompile(","),
+	SEMI_COLUMN:       *regexp.MustCompile(";"),
+	PLUS_SIGN:         *regexp.MustCompile("\\+"),
 }
 
-func generateToken(identifier string) (Token, error) {
-	switch TokenType(identifier) {
-	case FUNCTION, OPEN_BRACES, CLOSE_BRACES, OPEN_PARENTHESES, CLOSE_PARENTHESES, RETURN, EQUAL_SIGN:
-		return Token{Type: TokenType(identifier)}, nil
-	default:
-		if value, error := strconv.Atoi(identifier); error == nil {
-			return Token{Type: INTEGER_LITERAL, Value: value}, nil
-		} else if unicode.IsLetter(rune(identifier[0])) {
-			return Token{Type: VARIABLE_NAME, Value: identifier}, nil
-		} else {
-			return Token{}, fmt.Errorf("unknown identifier: %s", identifier)
+var keywords = array.Array[TokenType]{
+	FUNCTION,
+	RETURN,
+}
+
+type Token struct {
+	Type    TokenType
+	Content string
+}
+
+func isKeyword(word string) bool {
+	for _, token := range keywords {
+		regex := tokenToRegex[token]
+		if regex.MatchString(word) {
+			return true
 		}
 	}
+	return false
 }
 
-func Tokenize(code string) (array.Array[Token], error) {
-	trimmedCode := strings.Trim(code, " ")
-	identifiers := regexp.MustCompile(`\s+`).Split(trimmedCode, -1)
-	tokens := make(array.Array[Token], 0)
-	for _, identifier := range identifiers {
-		token, error := generateToken(identifier)
-		if error != nil {
-			return nil, error
+func findNextToken(content string) (*Token, int) {
+	var result *Token
+	var tokenEndIndex int
+
+	isFirstIteration := true
+
+	for tokenType, tokenRegex := range tokenToRegex {
+		indexes := tokenRegex.FindStringIndex(content)
+		if indexes == nil {
+			continue
 		}
-		tokens.Add(token)
+
+		if indexes[1] < tokenEndIndex || isFirstIteration {
+			tokenContent := content[indexes[0]:indexes[1]]
+			if tokenType == IDENTIFIER && isKeyword(tokenContent) {
+				_, token := keywords.Find(func(tt TokenType) bool {
+					rgx := tokenToRegex[tt]
+					return rgx.MatchString(tokenContent)
+				})
+				result = &Token{Type: token, Content: tokenContent}
+			} else {
+				result = &Token{Type: tokenType, Content: tokenContent}
+			}
+			tokenEndIndex = indexes[1]
+			isFirstIteration = false
+		}
+	}
+
+	if isFirstIteration {
+		return nil, 0
+	}
+
+	return result, tokenEndIndex
+}
+
+func Tokenize(sourceCode string) (array.Array[Token], error) {
+	tokens := make(array.Array[Token], 0)
+	for content := sourceCode; content != ""; {
+		token, tokenEndIndex := findNextToken(content)
+		if token == nil {
+			break
+		}
+
+		tokens.Add(*token)
+		content = content[tokenEndIndex:]
 	}
 	return tokens, nil
 }
